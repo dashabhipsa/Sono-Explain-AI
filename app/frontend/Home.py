@@ -4,17 +4,16 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime, timezone
+import sys
 
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageOps
 
-import sys
-from pathlib import Path
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.backend.services.model_service import ModelService
 
@@ -120,7 +119,7 @@ def make_probability_chart(probabilities):
     ))
     fig.update_layout(
         height=220, margin=dict(l=5, r=55, t=10, b=10),
-        xaxis=dict(range=[0, 108], title="Model probability", ticksuffix="%", showgrid=True, gridcolor="#edf1f4"),
+        xaxis=dict(range=[0, 108], title="Model score", ticksuffix="%", showgrid=True, gridcolor="#edf1f4"),
         yaxis=dict(title=None, autorange="reversed"),
         plot_bgcolor="white", paper_bgcolor="white",
         font=dict(family="DM Sans", color="#526176", size=12),
@@ -131,15 +130,15 @@ def make_probability_chart(probabilities):
 # Header
 st.markdown(
     '<div class="brand-row"><div class="brand-mark">⌁</div><div>'
-    '<div class="brand-name">SonoExplain AI</div><div class="brand-sub">Breast ultrasound research platform</div>'
+    '<div class="brand-name">SonoExplain AI</div><div class="brand-sub">Breast ultrasound · Research application</div>'
     '</div></div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="hero"><div class="hero-kicker">AI-assisted image analysis · Research prototype</div>'
-    '<div class="hero-title">A clearer view of<br>ultrasound AI.</div>'
-    '<div class="hero-copy">Explore model-generated breast ultrasound classification, lesion segmentation, visual explanations and predictive uncertainty — in one workspace.</div>'
-    '<span class="hero-pill">MULTISCALE DEEP LEARNING · EXPLAINABILITY · UNCERTAINTY</span></div>',
+    '<div class="hero"><div class="hero-kicker">BREAST ULTRASOUND · RESEARCH PROTOTYPE</div>'
+    '<div class="hero-title">Interpretable analysis of<br>breast ultrasound images.</div>'
+    '<div class="hero-copy">A research prototype combining image classification, lesion segmentation, Grad-CAM visualisation and predictive uncertainty.</div>'
+    '<span class="hero-pill">CLASSIFICATION · SEGMENTATION · MODEL INTERPRETATION</span></div>',
     unsafe_allow_html=True,
 )
 
@@ -153,49 +152,49 @@ except Exception as exc:
     service_ok = False
     model_error = str(exc)
     st.markdown(
-        '<div class="warning-note">● &nbsp; The analysis model could not be loaded. Please check the deployment configuration.</div>',
+        '<div class="warning-note">● &nbsp; The model could not be initialised. Check the application logs for details.</div>',
         unsafe_allow_html=True,
     )
 
 st.write("")
 left, right = st.columns([1.05, 0.95], gap="large")
 with left:
-    st.markdown('<div class="section-label">01 · Add an image</div><div class="section-title">Start an analysis</div><div class="section-copy">Upload one breast ultrasound image. Supported formats: PNG, JPG, JPEG, BMP and WEBP. Maximum file size: 10 MB.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">01 · Image input</div><div class="section-title">Upload an image</div><div class="section-copy">Upload a breast ultrasound image for analysis. Supported formats: PNG, JPG, JPEG, BMP and WEBP. Maximum file size: 10 MB.</div>', unsafe_allow_html=True)
     uploaded = st.file_uploader(
-        "Choose an ultrasound image",
+        "Select an ultrasound image",
         type=["png", "jpg", "jpeg", "bmp", "webp"],
         label_visibility="collapsed",
-        help="Use a de-identified image that you are permitted to share.",
+        help="Upload only de-identified images that you are authorised to use.",
     )
     if uploaded:
         try:
             image = Image.open(uploaded).convert("RGB")
             if uploaded.size > MAX_UPLOAD_MB * 1024 * 1024:
-                st.error("This image is larger than 10 MB. Please choose a smaller image.")
+                st.error("The selected image exceeds the 10 MB limit. Choose a smaller file.")
                 image = None
         except Exception:
-            st.error("We couldn't read this image. Please upload a valid PNG or JPEG.")
+            st.error("The image could not be opened. Check the file and try again.")
             image = None
         if image:
-            st.image(image, caption="Uploaded ultrasound image", use_container_width=True)
+            st.image(image, caption="Input ultrasound image", use_container_width=True)
             st.caption(f"{image.width} × {image.height} pixels")
     else:
         image = None
-        st.markdown('<div class="panel"><div style="font-size:30px;margin-bottom:8px">＋</div><b>Your image will appear here</b><div style="font-size:12px;color:#8290a0;margin-top:5px">Choose an image above to preview it before analysis.</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="panel"><div style="font-size:30px;margin-bottom:8px">＋</div><b>Image preview</b><div style="font-size:12px;color:#8290a0;margin-top:5px">The selected image will be displayed here.</div></div>', unsafe_allow_html=True)
 
 with right:
-    st.markdown('<div class="section-label">02 · Choose analysis options</div><div class="section-title">What would you like to see?</div><div class="section-copy">Both options are enabled by default. You can switch either off to shorten analysis time.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">02 · Analysis configuration</div><div class="section-title">Select the analysis outputs</div><div class="section-copy">Select the outputs to generate. Enabling additional analyses may increase processing time.</div>', unsafe_allow_html=True)
     with st.container():
-        explain = st.toggle("Visual explanation (Grad-CAM)", value=True)
-        st.caption("Highlights image regions associated with the model's predicted class. It is not a causal explanation.")
+        explain = st.toggle("Grad-CAM visualisation", value=True)
+        st.caption("Displays image regions associated with the predicted class. This visualisation does not establish causality.")
         st.divider()
-        uncertainty = st.toggle("Predictive uncertainty", value=True)
-        st.caption("Uses repeated dropout predictions to estimate model variability. It is not a clinical risk score.")
-    st.markdown('<div class="soft-note"><b>Privacy reminder</b><br>Use de-identified images only. This demo is not designed for storing patient records.</div>', unsafe_allow_html=True)
-    run_analysis = st.button("Analyze image", type="primary", use_container_width=True, disabled=(not service_ok or image is None))
+        uncertainty = st.toggle("Monte Carlo dropout uncertainty", value=True)
+        st.caption("Estimates prediction variability across repeated stochastic forward passes. It is not a clinical risk score.")
+    st.markdown('<div class="soft-note"><b>Data handling</b><br>Use de-identified images only. Do not submit identifiable patient information.</div>', unsafe_allow_html=True)
+    run_analysis = st.button("Run analysis", type="primary", use_container_width=True, disabled=(not service_ok or image is None))
 
 if run_analysis and image is not None:
-    with st.spinner("Analyzing the image… This may take a little while."):
+    with st.spinner("Running model inference and generating the selected outputs…"):
         try:
             analysis_result = model_service.analyze(
                 image,
@@ -206,37 +205,37 @@ if run_analysis and image is not None:
             st.session_state["sono_image"] = image.copy()
             st.session_state["sono_filename"] = uploaded.name
         except Exception as exc:
-            st.error("The analysis could not be completed. Please try again.")
+            st.error("Analysis failed. Review the application logs or try another image.")
             st.exception(exc)
 
 result = st.session_state.get("sono_result")
 if result:
     st.write("")
-    st.markdown('<div class="section-label">03 · Your results</div><div class="section-title">Analysis overview</div><div class="section-copy">These are outputs from the research model for the image you submitted. They should be interpreted cautiously.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">03 · Analysis results</div><div class="section-title">Prediction summary</div><div class="section-copy">The following outputs were generated by the research model for the submitted image. They are model estimates and require cautious interpretation.</div>', unsafe_allow_html=True)
     predicted = result.get("predicted_class", "unknown").title()
     confidence = result.get("calibrated_confidence")
     confidence_text = f"{confidence * 100:.1f}%" if confidence is not None else "Not available"
     st.markdown(
-        f'<div class="result-banner"><div class="result-label">Model-predicted category</div>'
+        f'<div class="result-banner"><div class="result-label">Predicted class</div>'
         f'<div class="result-value">{predicted}</div>'
         f'<div style="color:#5d777b;font-size:12px;margin-top:5px">Calibrated model confidence: {confidence_text}</div></div>',
         unsafe_allow_html=True,
     )
     st.write("")
-    tab_overview, tab_visuals, tab_reliability = st.tabs(["Overview", "Visual analysis", "Reliability"])
+    tab_overview, tab_visuals, tab_reliability = st.tabs(["Prediction summary", "Image-based outputs", "Uncertainty estimates"])
     with tab_overview:
         c1, c2 = st.columns([1.1, 0.9], gap="large")
         with c1:
-            st.markdown("**Class probability distribution**")
+            st.markdown("**Class-wise prediction scores**")
             st.plotly_chart(make_probability_chart(result.get("class_probabilities", {})), use_container_width=True, config={"displayModeBar": False})
-            st.caption("Probabilities describe the model's output distribution. They are not the probability that a person has a condition.")
+            st.caption("Scores represent the model output distribution; they should not be interpreted as an individual-level probability of disease.")
         with c2:
-            st.markdown("**At a glance**")
-            metric_card("Calibrated confidence", confidence_text, "Temperature-scaled output")
+            st.markdown("**Model output summary**")
+            metric_card("Calibrated top-class score", confidence_text, "Temperature-scaled model output")
             st.write("")
-            metric_card("Segmentation output", f'{result.get("segmentation_mask_width", 224)} × {result.get("segmentation_mask_height", 224)}', "Predicted mask dimensions")
+            metric_card("Segmentation map size", f'{result.get("segmentation_mask_width", 224)} × {result.get("segmentation_mask_height", 224)}', "Output dimensions in pixels")
             st.write("")
-            st.markdown('<div class="warning-note">This research model is not validated for clinical diagnosis, screening or treatment decisions. A qualified healthcare professional must interpret ultrasound images.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="warning-note">This model has not been validated for clinical diagnosis, screening or treatment decisions. Ultrasound findings must be assessed by a qualified healthcare professional.</div>', unsafe_allow_html=True)
     with tab_visuals:
         original = st.session_state["sono_image"]
         mask = decode_png(result["segmentation_mask_png_base64"]).convert("L")
@@ -249,39 +248,39 @@ if result:
         mask_overlay = Image.alpha_composite(display_image.convert("RGBA"), tint)
         col_a, col_b = st.columns(2, gap="large")
         with col_a:
-            st.markdown("**Predicted lesion mask**")
+            st.markdown("**Predicted segmentation mask**")
             st.image(mask, use_container_width=True)
         with col_b:
-            st.markdown("**Mask over ultrasound**")
+            st.markdown("**Segmentation overlay**")
             st.image(mask_overlay, use_container_width=True)
-        st.caption("The colored area is a model-predicted foreground mask at the configured threshold. It is not a verified lesion boundary.")
+        st.caption("Highlighted pixels show the region assigned to the foreground class by the segmentation model. This is an estimated mask, not an annotated reference boundary.")
         cam_b64 = result.get("gradcam_png_base64")
         if cam_b64:
             cam = decode_png(cam_b64).convert("L").resize(display_image.size)
             heat = Image.new("RGBA", cam.size, (235, 87, 76, 0))
             heat.putalpha(cam.point(lambda p: int(p * 0.55)))
             cam_overlay = Image.alpha_composite(display_image.convert("RGBA"), heat)
-            st.markdown("**Grad-CAM activation overlay**")
+            st.markdown("**Grad-CAM class-activation map**")
             st.image(cam_overlay, use_container_width=True)
-            st.caption("Grad-CAM highlights regions associated with the selected class. It does not establish why the model made its prediction.")
+            st.caption("Grad-CAM indicates image regions contributing to the selected class score. It is a coarse attribution map, not a causal explanation.")
         else:
-            st.info("Visual explanation was not requested for this analysis.")
+            st.info("Grad-CAM was not generated for this run.")
     with tab_reliability:
         entropy = result.get("predictive_entropy")
         variance = result.get("mean_predictive_variance")
         if entropy is not None:
             a, b = st.columns(2)
             with a:
-                metric_card("Predictive entropy", f"{float(entropy):.4f}", "Lower values indicate a more concentrated class distribution")
+                metric_card("Predictive entropy", f"{float(entropy):.4f}", "Summarises the spread of the predicted class distribution")
             with b:
-                metric_card("Mean predictive variance", f"{float(variance or 0):.6f}", "Variation across stochastic predictions")
+                metric_card("Mean predictive variance", f"{float(variance or 0):.6f}", "Variation across repeated stochastic predictions")
             mc = result.get("mc_mean_probabilities", {})
             if mc:
-                st.markdown("**Average probabilities across repeated predictions**")
+                st.markdown("**Mean class scores across stochastic passes**")
                 st.plotly_chart(make_probability_chart(mc), use_container_width=True, config={"displayModeBar": False})
-            st.markdown('<div class="soft-note">Uncertainty estimates describe variability in this model under the selected inference procedure. They do not establish whether an individual result is safe or correct.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="soft-note">These estimates quantify variability under the selected inference procedure. They do not measure clinical risk or establish whether a prediction is correct.</div>', unsafe_allow_html=True)
         else:
-            st.info("Predictive uncertainty was not requested for this analysis.")
+            st.info("Monte Carlo dropout uncertainty was not requested for this analysis.")
 
     # Export a user-facing report without internal checkpoint/training metadata.
     report = {
@@ -298,10 +297,10 @@ if result:
         "disclaimer": "Research use only. Not intended for diagnosis or clinical decision-making.",
     }
     st.write("")
-    st.markdown("**Save this analysis**")
+    st.markdown("**Export analysis results**")
     d1, d2 = st.columns(2)
     with d1:
-        st.download_button("Download summary (JSON)", json.dumps(report, indent=2), "sonoexplain_summary.json", "application/json", use_container_width=True)
+        st.download_button("Export results (JSON)", json.dumps(report, indent=2), "sonoexplain_summary.json", "application/json", use_container_width=True)
     with d2:
         try:
             from reportlab.lib.pagesizes import letter
@@ -317,13 +316,13 @@ if result:
             page.drawString(48, y, "Breast ultrasound research analysis summary")
             y -= 30
             page.setFont("Helvetica-Bold", 12)
-            page.drawString(48, y, f"Model-predicted category: {predicted}")
+            page.drawString(48, y, f"Predicted class: {predicted}")
             y -= 24
             page.setFont("Helvetica", 10)
             page.drawString(48, y, f"Calibrated model confidence: {confidence_text}")
             y -= 25
             page.setFont("Helvetica-Bold", 11)
-            page.drawString(48, y, "Class probability distribution")
+            page.drawString(48, y, "Class-wise prediction scores")
             y -= 18
             page.setFont("Helvetica", 10)
             for name, value in result.get("class_probabilities", {}).items():
@@ -346,12 +345,12 @@ if result:
                 y -= 14
             page.save()
             with d2:
-                st.download_button("Download PDF summary", pdf.getvalue(), "sonoexplain_summary.pdf", "application/pdf", use_container_width=True)
+                st.download_button("Export report (PDF)", pdf.getvalue(), "sonoexplain_summary.pdf", "application/pdf", use_container_width=True)
         except ImportError:
             with d2:
-                st.info("PDF export is unavailable. JSON summary is ready.")
+                st.info("PDF export is unavailable. The JSON file can still be downloaded.")
 
-    with st.expander("How should I interpret these results?"):
+    with st.expander("Output definitions and study limitations"):
         st.markdown(
             "- **Predicted category:** the class with the highest model score.\n"
             "- **Segmentation:** a model-generated foreground estimate, not a ground-truth contour.\n"
@@ -359,13 +358,13 @@ if result:
             "- **Uncertainty:** an estimate of prediction variability, not a clinical risk score.\n\n"
             "This tool has been developed using a small BUSI dataset with an image-level split, no patient identifiers and no external validation cohort."
         )
-    if st.button("Start a new analysis", use_container_width=True):
+    if st.button("Analyse another image", use_container_width=True):
         for key in ["sono_result", "sono_image", "sono_filename"]:
             st.session_state.pop(key, None)
         st.rerun()
 
 st.markdown(
-    '<div class="footer">SonoExplain AI · Experimental research prototype<br>'
-    'Do not upload identifiable patient information. This application is not intended for clinical diagnosis or treatment decisions.</div>',
+    '<div class="footer">SonoExplain AI · Breast ultrasound research prototype<br>'
+    'Use de-identified images only. This research application is not intended for clinical diagnosis or treatment decisions.</div>',
     unsafe_allow_html=True,
 )
