@@ -10,6 +10,12 @@ import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageOps
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT))
+
 from app.backend.services.model_service import ModelService
 
 MAX_UPLOAD_MB = 10
