@@ -130,7 +130,7 @@ def make_probability_chart(probabilities):
 # Header
 st.markdown(
     '<div class="brand-row"><div class="brand-mark">⌁</div><div>'
-    '<div class="brand-name">SonoExplain AI</div><div class="brand-sub">Breast ultrasound · Research application</div>'
+    '<div class="brand-name">SonoExplain AI</div>'
     '</div></div>',
     unsafe_allow_html=True,
 )
@@ -186,7 +186,7 @@ with right:
     st.markdown('<div class="section-label">02 · Analysis configuration</div><div class="section-title">Select the analysis outputs</div><div class="section-copy">Select the outputs to generate. Enabling additional analyses may increase processing time.</div>', unsafe_allow_html=True)
     with st.container():
         explain = st.toggle("Grad-CAM visualisation", value=True)
-        st.caption("Displays image regions associated with the predicted class. ")
+        st.caption("Displays image regions associated with the predicted class.")
         st.divider()
         uncertainty = st.toggle("Monte Carlo dropout uncertainty", value=True)
         st.caption("Estimates prediction variability across repeated stochastic forward passes. It is not a clinical risk score.")
@@ -211,7 +211,7 @@ if run_analysis and image is not None:
 result = st.session_state.get("sono_result")
 if result:
     st.write("")
-    st.markdown('<div class="section-label">03 · Analysis results</div><div class="section-title">Prediction summary</div><div class="section-copy"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">03 · Analysis results</div><div class="section-title">Prediction summary</div>', unsafe_allow_html=True)
     predicted = result.get("predicted_class", "unknown").title()
     confidence = result.get("calibrated_confidence")
     confidence_text = f"{confidence * 100:.1f}%" if confidence is not None else "Not available"
@@ -253,7 +253,7 @@ if result:
         with col_b:
             st.markdown("**Segmentation overlay**")
             st.image(mask_overlay, use_container_width=True)
-        st.caption("Highlighted pixels show the region assigned to the foreground class by the segmentation model. ")
+        st.caption("Highlighted pixels show the region assigned to the foreground class by the segmentation model.")
         cam_b64 = result.get("gradcam_png_base64")
         if cam_b64:
             cam = decode_png(cam_b64).convert("L").resize(display_image.size)
@@ -262,7 +262,7 @@ if result:
             cam_overlay = Image.alpha_composite(display_image.convert("RGBA"), heat)
             st.markdown("**Grad-CAM class-activation map**")
             st.image(cam_overlay, use_container_width=True)
-            st.caption("Grad-CAM indicates image regions contributing to the selected class score. ")
+            st.caption("Grad-CAM indicates image regions contributing to the selected class score.")
         else:
             st.info("Grad-CAM was not generated for this run.")
     with tab_reliability:
@@ -356,7 +356,6 @@ if result:
         st.rerun()
 
 st.markdown(
-    '<div class="footer">SonoExplain AI · Breast ultrasound research prototype<br>'
-    'Use de-identified images only. This research application is not intended for clinical diagnosis or treatment decisions.</div>',
+    '<div class="footer">Use de-identified images only. This research application is not intended for clinical diagnosis or treatment decisions.</div>',
     unsafe_allow_html=True,
 )
