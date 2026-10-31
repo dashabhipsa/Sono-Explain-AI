@@ -1,0 +1,33 @@
+{
+    "project": "Reliable and Explainable Breast Ultrasound Analysis",
+    "dataset": "SamIndia/BUSI",
+    "original_samples": 780,
+    "clean_samples": 778,
+    "classes": [
+        "benign",
+        "malignant",
+        "normal"
+    ],
+    "split": {
+        "train": 544,
+        "validation": 117,
+        "test": 117
+    },
+    "experiments": [
+        "E1 - EfficientNet-B0 baseline",
+        "E2 - Multi-task classification and segmentation",
+        "E3 - Multi-scale feature fusion",
+        "E4 - Grad-CAM explainability",
+        "E5 - Uncertainty quantification",
+        "E6 - Confidence calibration",
+        "E7 - Robustness and error analysis",
+        "E8 - Statistical evaluation"
+    ],
+    "random_seed": 42,
+    "limitations": [
+        "Small dataset",
+        "Image-level split",
+        "No external validation cohort",
+        "No patient identifiers"
+    ]
+}
