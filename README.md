@@ -2,7 +2,7 @@
 
 End-to-end research prototype for breast ultrasound image classification and lesion segmentation using the trained E3 MultiScaleBUSI model. Includes Grad-CAM, Monte Carlo Dropout estimates, temperature-scaled probabilities, FastAPI, Streamlit and downloadable JSON/PDF summaries.
 
-**Research use only. Not validated for diagnosis or clinical decision-making.** The BUSI dataset used here is small, split at image level, has no patient identifiers and has no external validation cohort. Do not upload identifiable patient data to an unapproved service.
+**Research use only. Not validated for diagnosis or clinical decision-making.**
 
 ## Requirements
 
@@ -57,10 +57,3 @@ pytest -q
 
 Tests cover real checkpoint inference, API contract and invalid uploads. Grad-CAM and MC-dropout should also be validated against representative real images and the original notebook before any research claims are made.
 
-## Interpretation and limitations
-
-- Grad-CAM is a coarse class-associated activation map, not a causal explanation or ground-truth lesion boundary.
-- The segmentation output is a model prediction, not a verified lesion contour.
-- MC Dropout estimates predictive variability from dropout sampling. It is not a clinical risk score or a guarantee of correctness.
-- Temperature scaling changes probability calibration, not the predicted class in the usual positive-temperature setting.
-- No external cohort or prospective clinical validation is included.
