@@ -2,22 +2,35 @@ import base64
 import io
 import json
 import os
+from pathlib import Path
 from datetime import datetime, timezone
 
 import numpy as np
-import requests
 import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageOps
 
-try:
-    API_URL = (
-        os.getenv("SONOEXPLAIN_API_URL")
-        or st.secrets.get("SONOEXPLAIN_API_URL", "http://localhost:8000")
-    ).rstrip("/")
-except Exception:
-    API_URL = os.getenv("SONOEXPLAIN_API_URL", "http://localhost:8000").rstrip("/")
+from app.backend.services.model_service import ModelService
+
 MAX_UPLOAD_MB = 10
+
+def checkpoint_location():
+    configured = os.getenv("SONOEXPLAIN_CHECKPOINT")
+    if configured:
+        return Path(configured)
+    try:
+        configured = st.secrets.get("SONOEXPLAIN_CHECKPOINT")
+        if configured:
+            return Path(configured)
+    except Exception:
+        pass
+    return Path(__file__).resolve().parents[2] / "checkpoints" / "E3" / "best_model_e3.pth"
+
+
+@st.cache_resource(show_spinner="Loading the SonoExplain AI model…")
+def load_model_service():
+    checkpoint = checkpoint_location()
+    return ModelService(str(checkpoint), device="cpu")
 
 st.set_page_config(
     page_title="SonoExplain AI | Ultrasound Research",
@@ -76,13 +89,6 @@ st.markdown(
 )
 
 
-def api_health():
-    try:
-        response = requests.get(f"{API_URL}/health", timeout=4)
-        response.raise_for_status()
-        return True
-    except requests.RequestException:
-        return False
 
 
 def decode_png(value):
@@ -131,12 +137,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Compact service status; intentionally no checkpoint or training metadata is shown to users.
-service_ok = api_health()
-if service_ok:
-    st.markdown('<div class="soft-note">● &nbsp; Analysis service is connected and ready.</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="warning-note">● &nbsp; The analysis service is currently unavailable. Please try again in a moment.</div>', unsafe_allow_html=True)
+# Load the model once per Streamlit process; no separate API server is required.
+model_service = None
+model_error = None
+try:
+    model_service = load_model_service()
+    service_ok = True
+except Exception as exc:
+    service_ok = False
+    model_error = str(exc)
+    st.markdown(
+        '<div class="warning-note">● &nbsp; The analysis model could not be loaded. Please check the deployment configuration.</div>',
+        unsafe_allow_html=True,
+    )
 
 st.write("")
 left, right = st.columns([1.05, 0.95], gap="large")
@@ -178,24 +191,17 @@ with right:
 if run_analysis and image is not None:
     with st.spinner("Analyzing the image… This may take a little while."):
         try:
-            response = requests.post(
-                f"{API_URL}/api/v1/predict",
-                files={"file": (uploaded.name, uploaded.getvalue(), uploaded.type or "application/octet-stream")},
-                data={"explain": str(explain).lower(), "estimate_uncertainty": str(uncertainty).lower()},
-                timeout=300,
+            analysis_result = model_service.analyze(
+                image,
+                explain=explain,
+                estimate_uncertainty=uncertainty,
             )
-            response.raise_for_status()
-            st.session_state["sono_result"] = response.json()
+            st.session_state["sono_result"] = analysis_result
             st.session_state["sono_image"] = image.copy()
             st.session_state["sono_filename"] = uploaded.name
-        except requests.RequestException as exc:
-            detail = "The analysis could not be completed. Please try again."
-            if getattr(exc, "response", None) is not None:
-                try:
-                    detail = exc.response.json().get("detail", detail)
-                except Exception:
-                    pass
-            st.error(detail)
+        except Exception as exc:
+            st.error("The analysis could not be completed. Please try again.")
+            st.exception(exc)
 
 result = st.session_state.get("sono_result")
 if result:

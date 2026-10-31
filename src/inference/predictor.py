@@ -1,4 +1,5 @@
 from pathlib import Path
+import gc
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,7 +12,6 @@ class E3Predictor:
     def __init__(self, checkpoint_path, device="cpu", mc_samples=30):
         self.device = torch.device(device)
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        self.checkpoint = checkpoint
         self.config = checkpoint.get("model_config", checkpoint.get("config", {}))
         self.classes = self.config.get("classes", ["benign", "malignant", "normal"])
         self.image_size = int(self.config.get("image_size", 224))
@@ -21,8 +21,10 @@ class E3Predictor:
         self.mc_samples = int(mc_samples)
         self.model = MultiScaleBUSI(num_classes=len(self.classes), pretrained=False, image_size=self.image_size)
         self.model.load_state_dict(checkpoint["model_state_dict"], strict=True)
-        self.model.to(self.device).eval()
         self.checkpoint_epoch = checkpoint.get("epoch")
+        del checkpoint
+        gc.collect()
+        self.model.to(self.device).eval()
 
     def preprocess(self, image):
         if isinstance(image, (str, Path)):
