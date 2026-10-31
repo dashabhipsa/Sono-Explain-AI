@@ -2,7 +2,7 @@
 
 End-to-end research prototype for breast ultrasound image classification and lesion segmentation using the trained E3 MultiScaleBUSI model. Includes Grad-CAM, Monte Carlo Dropout estimates, temperature-scaled probabilities, FastAPI, Streamlit and downloadable JSON/PDF summaries.
 
-**Research use only. Not validated for diagnosis or clinical decision-making.** The BUSI dataset used here is small, split at image level, has no patient identifiers and has no external validation cohort. Do not upload identifiable patient data to an unapproved service.
+**Research use only. Not validated for diagnosis or clinical decision-making.**
 
 ## Requirements
 
